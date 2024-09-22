@@ -36,17 +36,28 @@ Alguns dos principais hiperparâmetros do modelo são:
 
 O modelo é treinado por 20 épocas, e checkpoints são salvos a cada 5 épocas. O otimizador utilizado é o Adam, com um agendador de taxa de aprendizado personalizado.
 
-### Observação
+### Percepções pessoais
 
-Durante o treinamento, notei que na minha máquina o tempo de treinamento era muito alto, cerca de 10 minutos por etapa de um único batch. Isso tornou inviável o treinamento localmente. Para contornar isso, utilizei o Google Colab com uma GPU A100, o que acelerou significativamente o processo.
+Durante o treinamento, observei que, na minha máquina local, o tempo necessário para processar cada batch era extremamente elevado, em torno de 10 minutos por etapa. Isso tornou o treinamento inviável localmente, especialmente devido ao tamanho do dataset e à complexidade do modelo Transformer. Para contornar essa limitação, optei por utilizar o Google Colab com uma GPU A100, o que acelerou significativamente o processo. Com a A100, o tempo de treinamento por batch foi reduzido drasticamente, permitindo que o modelo fosse treinado de maneira muito mais eficiente. No entanto, mesmo utilizando o Colab, é necessário estar atento ao tempo limite de uso da GPU e às desconexões ocasionais, que podem interromper o treinamento. Por isso, tornou-se essencial salvar checkpoints com frequência para garantir que o progresso não fosse perdido em caso de interrupções.
+#### Miscelânea
 
-### Outras Percepções
+- **Tokenização**: A etapa de tokenização é fundamental para garantir que o modelo entenda a estrutura das frases. A tokenização pré-treinada fornecida pelo TensorFlow simplifica bastante este processo, economizando tempo e evitando a necessidade de criar um tokenizador do zero. No entanto, um ponto negativo é que, se o vocabulário do dataset for muito diferente do vocabulário do tokenizador pré-treinado, pode haver uma perda de precisão, especialmente em expressões idiomáticas ou termos menos comuns.
 
-- **Tokenização**: A etapa de tokenização é fundamental para garantir que o modelo entenda a estrutura das frases. A tokenização pré-treinada fornecida pelo TensorFlow simplifica bastante este processo.
-- **Atenção**: O mecanismo de atenção é o que diferencia os Transformers dos modelos anteriores de tradução automática. Ele permite que o modelo foque nas partes mais relevantes da frase de entrada ao gerar a tradução.
-- **Desempenho**: O uso de GPUs poderosas, como a A100 no Colab, é essencial para treinar modelos complexos como este em um tempo razoável. Treinar em CPUs ou GPUs menos potentes pode ser inviável devido ao tempo necessário.
-- **Checkpointing**: O salvamento de checkpoints a cada 5 épocas permitiu que o treinamento fosse retomado facilmente em caso de interrupções, o que foi muito útil ao usar o Colab, onde a conexão pode ser instável.
+- **Atenção**: O mecanismo de atenção é o que diferencia os Transformers dos modelos anteriores de tradução automática. Ele permite que o modelo foque nas partes mais relevantes da frase de entrada ao gerar a tradução, o que melhora a qualidade das traduções, especialmente em frases complexas. No entanto, o custo computacional do mecanismo de atenção é elevado, especialmente quando se trabalha com frases longas, o que aumenta o tempo de treinamento e a necessidade de hardware mais potente.
 
+- **Desempenho**: O uso de GPUs poderosas, como a A100 no Colab, é essencial para treinar modelos complexos como este em um tempo razoável. Treinar em CPUs ou GPUs menos potentes pode ser inviável devido ao tempo necessário e ao risco de esgotamento de memória. A necessidade de hardware especializado pode ser uma barreira para desenvolvedores que não têm acesso a esses recursos. Além disso, mesmo com uma GPU poderosa, o tempo de treinamento ainda pode ser significativo, dependendo do número de camadas e da dimensão dos embeddings.
+
+- **Checkpointing**: O salvamento de checkpoints a cada 5 épocas permitiu que o treinamento fosse retomado facilmente em caso de interrupções, o que foi muito útil ao usar o Colab, onde a conexão pode ser instável. No entanto, a configuração de checkpoints pode consumir espaço de armazenamento e exige um gerenciamento cuidadoso para evitar que o disco seja preenchido rapidamente. Além disso, se o modelo for interrompido muito frequentemente, o tempo gasto para salvar e carregar checkpoints pode se tornar um gargalo.
+
+- **Escalabilidade**: Uma vantagem clara do Transformer é sua escalabilidade. Ao aumentar o número de camadas, cabeças de atenção e a dimensão dos embeddings, o modelo pode aprender representações mais complexas e gerar traduções mais precisas. No entanto, isso também aumenta significativamente o custo computacional. Em experimentos com configurações maiores, como 6 ou mais camadas no encoder e decoder, o modelo apresentou melhorias na qualidade das traduções, mas o tempo de treinamento aumentou consideravelmente.
+
+- **Qualidade das Traduções**: As traduções geradas pelo modelo após o treinamento foram bastante satisfatórias, especialmente em frases simples e diretas. No entanto, em frases mais longas ou com estruturas gramaticais complexas, o modelo às vezes falhou em capturar nuances ou gerou traduções menos precisas. Isso indica que, embora o Transformer seja poderoso, ainda há espaço para ajustes finos, como o uso de datasets maiores ou mais específicos para melhorar a generalização.
+
+- **Facilidade de Implementação**: A implementação do Transformer no TensorFlow foi facilitada pelo uso de tutoriais e ferramentas pré-existentes. A integração com o TensorFlow Datasets e o suporte a tokenizadores prontos economizou muito tempo. No entanto, a curva de aprendizado para entender profundamente o funcionamento dos Transformers, especialmente o mecanismo de atenção, pode ser íngreme para iniciantes.
+
+- **Limitações de Recursos**: Embora o treinamento no Colab tenha sido uma solução viável, o tempo de uso da GPU é limitado, e a desconexão automática após um período de inatividade pode ser frustrante. Além disso, o Colab Pro oferece mais tempo de GPU, mas ainda assim é necessário monitorar o uso de recursos para evitar interrupções inesperadas.
+
+Em resumo, o projeto apresentou resultados promissores, mas também destacou a importância de se ter acesso a hardware adequado e a necessidade de um gerenciamento eficiente de recursos, como checkpoints e tempo de GPU.
 ## Inferência
 
 Após o treinamento, o modelo pode ser utilizado para traduzir novas frases. A classe `Translator` foi implementada para facilitar o processo de inferência. Basta fornecer uma frase em português, e o modelo retorna a tradução em inglês.
